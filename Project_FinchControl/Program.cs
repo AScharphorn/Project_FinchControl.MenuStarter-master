@@ -6,7 +6,7 @@ using FinchAPI;
 namespace Project_FinchControl
 {
 
-    // **************************************************
+    // ******************************************************
     //
     // Title: Finch Control - Menu Starter
     // Description: Starter solution with the helper methods,
@@ -17,7 +17,7 @@ namespace Project_FinchControl
     // Dated Created: 1/22/2020
     // Last Modified: 2/24/2019
     //
-    // **************************************************
+    // ******************************************************
 
     class Program
     {
