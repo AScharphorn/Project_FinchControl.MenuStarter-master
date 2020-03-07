@@ -241,7 +241,11 @@ namespace Project_FinchControl
             Console.WriteLine($"Elapsed time: {elapsedTime}");
         }
 
-        static bool AlarmSystemMonitorLightSensors(Finch finchrobot, string sensorsToMonitor, string rangeType, int minMaxThresholdValue, int timeToMonitor)
+        static bool AlarmSystemMonitorLightSensors(Finch finchrobot, 
+                                                   string sensorsToMonitor, 
+                                                   string rangeType, 
+                                                   int minMaxThresholdValue, 
+                                                   int timeToMonitor)
         {
             bool thresholdExceeded = false;
             int elapsedTime = 0;
@@ -387,8 +391,11 @@ namespace Project_FinchControl
             int numberOfDataPoints = 0;
             double dataPointFrequency = 0;
             double[] fahrenheitTemp = null;
+            double[] averageLightLevel = null;
 
             bool quitDataRecorderMenu = false;
+            bool leftLightSensor = false;
+            bool rightLightSensor = false;
             string menuChoice;
 
             do
@@ -400,8 +407,9 @@ namespace Project_FinchControl
                 //
                 Console.WriteLine("\ta) Number of Data Points");
                 Console.WriteLine("\tb) Frequency of Data Points");
-                Console.WriteLine("\tc) Get Data");
-                Console.WriteLine("\td) Show Data");
+                Console.WriteLine("\tc) Activate Lights Sensors");
+                Console.WriteLine("\td) Get Data");
+                Console.WriteLine("\te) Show Data");
                 Console.WriteLine("\tq) Return to Main Menu");
                 Console.Write("\t\tEnter Choice:");
                 menuChoice = Console.ReadLine().ToLower();
@@ -420,11 +428,24 @@ namespace Project_FinchControl
                         break;
 
                     case "c":
-                        fahrenheitTemp = DataRecorderDisplayGetData(numberOfDataPoints, dataPointFrequency, fahrenheitTemp, finchrobot);
+                        leftLightSensor = DataRecorderGetLeftLightSensor(leftLightSensor);
+                        rightLightSensor = DataRecorderGetRightLightSensor(rightLightSensor);
                         break;
 
                     case "d":
-                        DataRecorderDisplayData(fahrenheitTemp);
+                        fahrenheitTemp = new double[numberOfDataPoints];
+                        averageLightLevel = new double[numberOfDataPoints];
+                        fahrenheitTemp = DataRecorderDisplayGetData(numberOfDataPoints, 
+                                                                    dataPointFrequency, 
+                                                                    fahrenheitTemp,
+                                                                    averageLightLevel,
+                                                                    leftLightSensor, 
+                                                                    rightLightSensor, 
+                                                                    finchrobot);
+                        break;
+
+                    case "e":
+                        DataRecorderDisplayData(numberOfDataPoints, fahrenheitTemp, averageLightLevel);
                         break;
 
                     case "q":
@@ -441,45 +462,119 @@ namespace Project_FinchControl
             } while (!quitDataRecorderMenu);
         }
 
-        static void DataRecorderDisplayData(double[] fahrenheitTemp)
+        static bool DataRecorderGetLeftLightSensor(bool leftLightSensor)
+        {
+            string userResponse;
+
+            DisplayScreenHeader("Activate Left Light Sensor");
+
+            do
+            {
+                Console.WriteLine();
+                Console.WriteLine("Would you like to activate the left light sensor?");
+                userResponse = Console.ReadLine().ToLower();
+
+                if (userResponse == "yes")
+                {
+                    leftLightSensor = true;
+                    Console.WriteLine("The left light sensor has been activated.");
+                }
+                else if (userResponse == "no")
+                {
+                    Console.WriteLine("The left light sensor has not been activated.");
+                }
+                else
+                {
+                    Console.WriteLine("Please enter 'yes' or 'no'.");
+                }
+
+                DisplayContinuePrompt();
+            } while (userResponse != "yes" && userResponse != "no");
+
+            return leftLightSensor;
+        }
+
+        static bool DataRecorderGetRightLightSensor(bool rightLightSensor)
+        {
+            string userResponse;
+
+            DisplayScreenHeader("Activate Right Light Sensor");
+
+            do
+            {
+                Console.WriteLine();
+                Console.WriteLine("Would you like to activate the right light sensor?");
+                userResponse = Console.ReadLine().ToLower();
+
+                if (userResponse == "yes")
+                {
+                    rightLightSensor = true;
+                    Console.WriteLine("The right light sensor has been activated.");
+                }
+                else if (userResponse == "no")
+                {
+                    Console.WriteLine("The right light sensor has not been activated.");
+                }
+                else
+                {
+                    Console.WriteLine("Please enter 'yes' or 'no'.");
+                }
+
+                DisplayContinuePrompt();
+            } while (userResponse != "yes" && userResponse != "no");
+
+            return rightLightSensor;
+        }
+
+        static void DataRecorderDisplayData(int numberOfDataPoints, double[] fahrenheitTemp, double[] averageLightLevel)
         {
             DisplayScreenHeader("Data");
 
-            DataRecorderDisplayData(fahrenheitTemp);
-            Console.WriteLine();
+            DataRecorderDisplayDataTable(numberOfDataPoints, fahrenheitTemp, averageLightLevel);
 
             DisplayContinuePrompt();
         }
 
-        static void DataRecorderDisplayDataTable(double[] fahrenheitTemp)
+        static void DataRecorderDisplayDataTable(int numberOfDataPoints, double[] fahrenheitTemp, double[] averageLightLevel)
         {
             //
             // Table Headers
             //
             Console.WriteLine(
                 "Data Point".PadLeft(12) +
-                "Tempature".PadLeft(12)
+                "Tempature".PadLeft(12) +
+                "Light Level".PadLeft(12)
                 );
             Console.WriteLine(
                 "__________".PadLeft(12) +
-                "_________".PadLeft(12)
+                "_________".PadLeft(12) +
+                "___________".PadLeft(12)
                 );
 
             //
             // Table Data
             //
-            for (int index = 0; index < fahrenheitTemp.Length; index++)
+            for (int index = 0; index < numberOfDataPoints; index++)
             {
                 Console.WriteLine(
                     (index + 1).ToString().PadLeft(12) +
-                    fahrenheitTemp[index].ToString("n2").PadLeft(12)
+                    fahrenheitTemp[index].ToString("n2").PadLeft(12) +
+                    averageLightLevel[index].ToString("n2").PadLeft(12)
                     );
             }
             DisplayContinuePrompt();
         }
 
-        static double[] DataRecorderDisplayGetData(int numberOfDataPoints, double dataPointFrequency, double[] fahrenheitTemp, Finch finchrobot)
+        static double[] DataRecorderDisplayGetData(int numberOfDataPoints,
+                                                   double dataPointFrequency,
+                                                   double[] fahrenheitTemp,
+                                                   double[] averageLightLevel,
+                                                   bool leftLightSensor,
+                                                   bool rightLightSensor,
+                                                   Finch finchrobot)
         {
+            double leftLightLevel = 0;
+            double rightLightLevel = 0;
             double celsiusTemp;
             int frequencyInSeconds;
 
@@ -488,15 +583,28 @@ namespace Project_FinchControl
             Console.WriteLine($"Data point frequency: {dataPointFrequency}");
             Console.WriteLine($"Number of data points: {numberOfDataPoints}");
 
-            Console.WriteLine("The finch robot is ready to record temperatures.");
+            Console.WriteLine("The finch robot is ready to record temperatures and light levels.");
             DisplayContinuePrompt();
 
-            for (int index = 1; index < numberOfDataPoints; index++)
+            for (int index = 0; index < numberOfDataPoints; index++)
             {
                 celsiusTemp = finchrobot.getTemperature();
                 fahrenheitTemp[index] = DataRecorderConvertCelsiusToFahrenheit(celsiusTemp);
-                Console.WriteLine($"Temperature #{index}: {fahrenheitTemp[index]} fahrenheit");
+                Console.WriteLine($"Temperature #{index + 1}: {fahrenheitTemp[index]} fahrenheit");
                 frequencyInSeconds = (int)(dataPointFrequency * 1000);
+
+                if (leftLightSensor)
+                {
+                    leftLightLevel = finchrobot.getLeftLightSensor();
+                }
+
+                if (rightLightSensor)
+                {
+                    rightLightLevel = finchrobot.getRightLightSensor();
+                }
+
+                averageLightLevel[index] = (leftLightLevel + rightLightLevel) / 2;
+                Console.WriteLine($"Light Level #{index + 1}: {averageLightLevel[index]}");
                 finchrobot.wait(frequencyInSeconds);
             }
 
@@ -507,10 +615,11 @@ namespace Project_FinchControl
 
             Console.WriteLine();
             Console.WriteLine("Current data");
-            DataRecorderDisplayDataTable(fahrenheitTemp);
+            DataRecorderDisplayDataTable(numberOfDataPoints, fahrenheitTemp, averageLightLevel);
 
             Console.WriteLine();
             Console.WriteLine($"Average Temperature: {fahrenheitTemp.Average()}");
+            Console.WriteLine($"Average Light Level: {averageLightLevel.Average()}");
 
             DisplayContinuePrompt();
 
