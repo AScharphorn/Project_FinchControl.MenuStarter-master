@@ -106,7 +106,7 @@ namespace Project_FinchControl
                     case "q":
                         DisplayDisconnectFinchRobot(finchRobot);
                         quitApplication = true;
-                        break;
+                        break; 
 
                     default:
                         Console.WriteLine();
