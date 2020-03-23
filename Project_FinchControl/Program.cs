@@ -199,7 +199,7 @@ namespace Project_FinchControl
                         break;
                 }
 
-            } while (!quitUserProgrammingMenu);
+            } while (!quitUserProgrammingMenu); 
 
             DisplayContinuePrompt();
         }
