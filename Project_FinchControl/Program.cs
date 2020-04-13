@@ -38,6 +38,8 @@ namespace Project_FinchControl
 
     class Program
     {
+        #region MAIN
+
         /// <summary>
         /// first method run when the app starts up
         /// </summary>
@@ -57,7 +59,7 @@ namespace Project_FinchControl
         static void SetTheme()
         {
             Console.ForegroundColor = ConsoleColor.DarkBlue;
-            Console.BackgroundColor = ConsoleColor.White;
+            Console.BackgroundColor = ConsoleColor.Black;
         }
 
         /// <summary>
@@ -86,7 +88,8 @@ namespace Project_FinchControl
                 Console.WriteLine("\tc) Data Recorder");
                 Console.WriteLine("\td) Alarm System");
                 Console.WriteLine("\te) User Programming");
-                Console.WriteLine("\tf) Disconnect Finch Robot");
+                Console.WriteLine("\tf) Persistance");
+                Console.WriteLine("\tg) Disconnect Finch Robot");
                 Console.WriteLine("\tq) Quit");
                 Console.Write("\t\tEnter Choice:");
                 menuChoice = Console.ReadLine().ToLower();
@@ -117,6 +120,10 @@ namespace Project_FinchControl
                         break;
 
                     case "f":
+                        PersistanceDisplayMainMenu();
+                        break;
+
+                    case "g":
                         DisplayDisconnectFinchRobot(finchRobot);
                         break;
 
@@ -134,6 +141,370 @@ namespace Project_FinchControl
 
             } while (!quitApplication);
         }
+
+        #endregion
+
+        #region PERSISTANCE
+
+        static void PersistanceDisplayMainMenu()
+        {
+            Console.CursorVisible = true;
+
+            bool quitApplication = false;
+            string menuChoice;
+
+            (ConsoleColor foregroundColor, ConsoleColor backgroundColor) themeColors;
+            themeColors.foregroundColor = ConsoleColor.Red;
+            themeColors.backgroundColor = ConsoleColor.White;
+
+            do
+            {
+                DisplayScreenHeader("Main Menu");
+
+                //
+                // get user menu choice
+                //
+                Console.WriteLine("\ta) Read Theme Data");
+                Console.WriteLine("\tb) Display Current Set Theme");
+                Console.WriteLine("\tc) Register/Login");
+                Console.WriteLine("\tq) Quit");
+                Console.Write("\t\tEnter Choice:");
+                menuChoice = Console.ReadLine().ToLower();
+
+                //
+                // process user menu choice
+                //
+                switch (menuChoice)
+                {
+                    case "a":
+                        PersistanceDisplayReadThemeData();
+                        break;
+
+                    case "b":
+                        PersistanceDisplayCurrentSetTheme();
+                        break;
+
+                    case "c":
+                        PersistanceDisplayRegisterLogin();
+                        break;
+
+                    case "q":
+                        quitApplication = true;
+                        break;
+
+                    default:
+                        Console.WriteLine();
+                        Console.WriteLine("\tPlease enter a letter for the menu choice.");
+                        DisplayContinuePrompt();
+                        break;
+                }
+
+            } while (!quitApplication);
+        }
+
+        static void PersistanceDisplayRegisterLogin()
+        {
+            string userResponse;
+
+            DisplayScreenHeader("Register/Login");
+
+            do
+            {
+                Console.WriteLine("Are you a registered user?");
+                userResponse = Console.ReadLine();
+
+                if (userResponse == "yes")
+                {
+                    PersistanceDisplayLogin();
+                }
+                else if (userResponse == "no")
+                {
+                    PersistanceDisplayRegister();
+                }
+                else
+                {
+                    Console.WriteLine("Please enter 'yes' or 'no'");
+                }
+                DisplayContinuePrompt();
+            } while (userResponse != "yes" && userResponse != "no");
+        }
+
+        static void PersistanceDisplayLogin()
+        {
+            string userName;
+            string password;
+            bool validLogin;
+            do
+            {
+                DisplayScreenHeader("Login");
+
+                Console.WriteLine();
+                Console.WriteLine("Enter your user name:");
+                userName = Console.ReadLine();
+
+                Console.WriteLine();
+                Console.WriteLine("Enter your password:");
+                password = Console.ReadLine();
+
+                validLogin = PersistanceGetIsValidLoginInfo(userName, password);
+
+                Console.WriteLine();
+                if (validLogin)
+                {
+                    Console.WriteLine("You are now logged in");
+                }
+                else
+                {
+                    Console.WriteLine("It appears you have entered the wrong username or password.");
+                    Console.WriteLine("Please try again.");
+                }
+                DisplayContinuePrompt();
+            } while (!validLogin);
+        }
+
+        static bool PersistanceGetIsValidLoginInfo(string userName, string password)
+        {
+            List<(string username, string password)> registeredUserLoginInfo = new List<(string username, string password)>();
+            bool validUser = false;
+
+            registeredUserLoginInfo = PersistanceReadLoginInfoData();
+
+            foreach ((string username, string password) userLoginInfo in registeredUserLoginInfo)
+            {
+                if (validUser = (userLoginInfo.username == userName) && (userLoginInfo.password == password))
+                {
+                    validUser = true;
+                    break;
+                }
+            }
+
+            return validUser;
+        }
+
+        static List<(string username, string password)> PersistanceReadLoginInfoData()
+        {
+            string dataPath = @"Data/LoginData.txt";
+
+            string[] loginInfoArray;
+            (string username, string password) loginInfoTuple;
+
+            List<(string username, string password)> registeredUserLoginInfo = new List<(string username, string password)>();
+
+            loginInfoArray = File.ReadAllLines(dataPath);
+
+            foreach (string loginInfoText in loginInfoArray)
+            {
+                loginInfoArray = loginInfoText.Split(',');
+
+                loginInfoTuple.username = loginInfoArray[0];
+                loginInfoTuple.password = loginInfoArray[1];
+
+                registeredUserLoginInfo.Add(loginInfoTuple);
+            }
+
+            return registeredUserLoginInfo;
+        }
+
+        static void PersistanceDisplayRegister()
+        {
+            string userName;
+            string password;
+
+            DisplayScreenHeader("Register");
+
+            Console.WriteLine("Enter your user name");
+            userName = Console.ReadLine();
+            Console.WriteLine("Enter your password");
+            password = Console.ReadLine();
+
+            PersistanceWriteLoginInfoData(userName, password);
+
+            Console.WriteLine();
+            Console.WriteLine("The following information has been entered and saved.");
+            Console.WriteLine($"\tuser name: {userName}");
+            Console.WriteLine($"\tpassword: {password}");
+
+            DisplayContinuePrompt();
+        }
+
+        static void PersistanceWriteLoginInfoData(string userName, string password)
+        {
+            string dataPath = @"Data/LoginData.txt";
+            string loginInfoText;
+
+            loginInfoText = userName + "," + password + "\n";
+
+            File.AppendAllText(dataPath, loginInfoText);
+        }
+
+        static void PersistanceDisplayCurrentSetTheme()
+        {
+            (ConsoleColor foregroundColor, ConsoleColor backgroundColor) themeColors;
+            bool themeChosen = false;
+            string userResponse;
+
+            themeColors = PersistanceDisplayReadThemeData();
+            Console.ForegroundColor = themeColors.foregroundColor;
+            Console.BackgroundColor = themeColors.backgroundColor;
+            Console.Clear();
+
+            DisplayScreenHeader("Set Application theme");
+
+            Console.WriteLine($"\tCurrent foreground color: {Console.ForegroundColor}");
+            Console.WriteLine($"\tCurrent background color: {Console.BackgroundColor}");
+            Console.WriteLine();
+
+            do
+            {
+                Console.WriteLine("\tWould you like to change the current theme?");
+                userResponse = Console.ReadLine();
+
+                if (userResponse == "yes")
+                {
+                    do
+                    {
+                        themeColors.foregroundColor = PersistanceGetForegroundConsoleColor();
+                        themeColors.backgroundColor = PersistanceGetBackgroundConsoleColor();
+
+                        Console.ForegroundColor = themeColors.foregroundColor;
+                        Console.BackgroundColor = themeColors.backgroundColor;
+                        Console.Clear();
+
+                        DisplayScreenHeader("Set Application Theme");
+                        Console.WriteLine();
+                        Console.WriteLine($"\tNew foreground color: {Console.ForegroundColor}");
+                        Console.WriteLine($"\tNew background color: {Console.BackgroundColor}");
+
+                        do
+                        {
+                            Console.WriteLine();
+                            Console.WriteLine("Is this the theme that you would like?");
+                            userResponse = Console.ReadLine();
+                            if (userResponse == "yes")
+                            {
+                                themeChosen = true;
+                                PersistanceGetWriteThemeData(themeColors.foregroundColor, themeColors.backgroundColor);
+                            }
+                            else if (userResponse == "no")
+                            {
+                                Console.WriteLine("then please reenter the new theme that you would like.");
+                            }
+                            else
+                            {
+                                Console.WriteLine("Please enter 'yes' or 'no'");
+                            }
+                            DisplayContinuePrompt();
+                        } while (userResponse != "yes" && userResponse != "no");
+                    } while (!themeChosen && userResponse == "no");
+                }
+                else if (userResponse == "no")
+                {
+                    DisplayContinuePrompt();
+                }
+                else
+                {
+                    Console.WriteLine("Please enter 'yes' or 'no'");
+                    DisplayContinuePrompt();
+                }
+
+            } while (userResponse != "yes" && userResponse != "no");
+        }
+
+        static void PersistanceGetWriteThemeData(ConsoleColor foregroundColor, ConsoleColor backgroundColor)
+        {
+            string dataPath = @"Data/ThemeData.txt";
+
+            DisplayScreenHeader("Write Theme Data");
+
+            File.WriteAllText(dataPath, foregroundColor.ToString() + "\n");
+            File.AppendAllText(dataPath, backgroundColor.ToString());
+
+            DisplayIoStatus();
+            DisplayContinuePrompt();
+        }
+
+        static (ConsoleColor foregroundColor, ConsoleColor backgroundColor) PersistanceDisplayReadThemeData()
+        {
+            string dataPath = @"Data/ThemeData.txt";
+            string[] themeColors;
+
+            ConsoleColor foregroundColor;
+            ConsoleColor backgroundColor;
+
+            DisplayScreenHeader("Read Theme Data");
+
+            themeColors = File.ReadAllLines(dataPath);
+
+            Enum.TryParse(themeColors[0], true, out foregroundColor);
+            Enum.TryParse(themeColors[1], true, out backgroundColor);
+
+            Console.WriteLine();
+            Console.WriteLine($"Current foreground color: {themeColors[0]}");
+            Console.WriteLine($"Current background color: {themeColors[1]}");
+
+            DisplayContinuePrompt();
+            return (foregroundColor, backgroundColor);
+        }
+
+        static ConsoleColor PersistanceGetBackgroundConsoleColor()
+        {
+            ConsoleColor consoleColor;
+            bool validConsoleColor;
+
+            DisplayScreenHeader("Get Background Console Color");
+
+            do
+            {
+                Console.WriteLine("Enter the value for the Background.");
+                validConsoleColor = Enum.TryParse(Console.ReadLine(), true, out consoleColor);
+
+                if (!validConsoleColor)
+                {
+                    Console.WriteLine("You did not enter a valid console color. Please try again.");
+                }
+                else
+                {
+                    validConsoleColor = true;
+                }
+
+                DisplayContinuePrompt();
+
+            } while (!validConsoleColor);
+
+            DisplayContinuePrompt();
+            return consoleColor;
+        }
+
+        static ConsoleColor PersistanceGetForegroundConsoleColor()
+        {
+            ConsoleColor consoleColor;
+            bool validConsoleColor;
+
+            DisplayScreenHeader("Get Foreground Console Color");
+
+            do
+            {
+                Console.WriteLine("Enter the value for the Foreground.");
+                validConsoleColor = Enum.TryParse(Console.ReadLine(), true, out consoleColor);
+
+                if (!validConsoleColor)
+                {
+                    Console.WriteLine("You did not enter a valid console color. Please try again.");
+                }
+                else
+                {
+                    validConsoleColor = true;
+                }
+
+                DisplayContinuePrompt();
+
+            } while (!validConsoleColor);
+
+            DisplayContinuePrompt();
+            return consoleColor;
+        }
+
+        #endregion
 
         #region USER PROGRAMMING
 
@@ -163,6 +534,8 @@ namespace Project_FinchControl
                 Console.WriteLine("\tb) Add Commands");
                 Console.WriteLine("\tc) View Commands");
                 Console.WriteLine("\td) Execute Commands");
+                Console.WriteLine("\te) Write User Program");
+                Console.WriteLine("\tf) Load User Program");
                 Console.WriteLine("\tq) Return to Main Menu");
                 Console.Write("\t\tEnter Choice:");
                 menuChoice = Console.ReadLine().ToLower();
@@ -188,6 +561,14 @@ namespace Project_FinchControl
                         UserProgrammingDisplayExecuteFinchCommands(finchRobot, commands, commandParameters);
                         break;
 
+                    case "e":
+                        UserProgrammingWriteUserProgram(commands);
+                        break;
+
+                    case "f":
+                        UserProgrammingLoadUserProgram();
+                        break;
+
                     case "q":
                         quitUserProgrammingMenu = true;
                         break;
@@ -204,7 +585,40 @@ namespace Project_FinchControl
             DisplayContinuePrompt();
         }
 
-        private static void UserProgrammingDisplayExecuteFinchCommands(Finch finchRobot,
+        static void UserProgrammingLoadUserProgram()
+        {
+            string dataPath = @"Data/ProgrammingData.txt";
+            string programmingList;
+
+            DisplayScreenHeader("Loading User Program");
+
+            Console.WriteLine("The system is loading your program.");
+            DisplayContinuePrompt();
+
+            programmingList = File.ReadAllText(dataPath);
+            Console.WriteLine($"{programmingList}");
+
+            DisplayContinuePrompt();
+        }
+
+        static void UserProgrammingWriteUserProgram(List<Command> commands)
+        {
+            string dataPath = @"Data/ProgrammingData.txt";
+
+            DisplayScreenHeader("Write Program to File");
+
+            Console.WriteLine("Your program is being saved to the file.");
+            DisplayContinuePrompt();
+
+            foreach (Command command in commands)
+            {
+                File.AppendAllText(dataPath, command + "\n");
+            }
+            DisplayIoStatus();
+            DisplayContinuePrompt();
+        }
+
+        static void UserProgrammingDisplayExecuteFinchCommands(Finch finchRobot,
                                                                        List<Command> commands,
                                                                        (int motorSpeed,
                                                                         int notePitch, 
@@ -1357,6 +1771,8 @@ namespace Project_FinchControl
                 Console.WriteLine("\tc) Activate Lights Sensors");
                 Console.WriteLine("\td) Get Data");
                 Console.WriteLine("\te) Show Data");
+                Console.WriteLine("\tf) Read From Data File");
+                Console.WriteLine("\tg) Write to Data File");
                 Console.WriteLine("\tq) Return to Main Menu");
                 Console.Write("\t\tEnter Choice:");
                 menuChoice = Console.ReadLine().ToLower();
@@ -1395,6 +1811,14 @@ namespace Project_FinchControl
                         DataRecorderDisplayData(numberOfDataPoints, fahrenheitTemp, averageLightLevel);
                         break;
 
+                    case "f":
+                        DataRecorderDisplayReadFileData();
+                        break;
+
+                    case "g":
+                        DataRecorderWriteFileData(averageLightLevel, fahrenheitTemp, numberOfDataPoints);
+                        break;
+
                     case "q":
                         quitDataRecorderMenu = true;
                         break;
@@ -1407,6 +1831,58 @@ namespace Project_FinchControl
                 }
 
             } while (!quitDataRecorderMenu);
+        }
+
+        static void DataRecorderDisplayReadFileData()
+        {
+            string dataPath1 = @"Data/LightData.txt";
+            string dataPath2 = @"Data/TemperatureData.txt";
+            string lightData;
+            string temperatureData;
+
+            DisplayScreenHeader("Light Data");
+            lightData = File.ReadAllText(dataPath1);
+            Console.WriteLine($"{lightData}");
+            DisplayContinuePrompt();
+
+            DisplayScreenHeader("Temperature Data");
+            temperatureData = File.ReadAllText(dataPath2);
+            Console.WriteLine($"{temperatureData}");
+            DisplayContinuePrompt();
+        }
+
+        static void DataRecorderWriteFileData(double[] averageLightLevel, double[] fahrenheitTemp, double numberOfDataPoints)
+        {
+            string dataPath1 = @"Data/LightData.txt";
+            string dataPath2 = @"Data/TemperatureData.txt";
+            string lightInfoText;
+            string temperatureInfoText;
+
+            DisplayScreenHeader("Saving Data to File");
+
+            Console.WriteLine("The System about to save the data.");
+            DisplayContinuePrompt();
+
+            DisplayScreenHeader("Write Light Data");
+            Console.WriteLine("Saving the light data to the file.");
+            for (int index = 0; index < numberOfDataPoints; index++)
+            {
+                lightInfoText = averageLightLevel[index].ToString();
+                File.AppendAllText(dataPath1, lightInfoText + "\n");
+            }
+            DisplayContinuePrompt();
+            DisplayIoStatus();
+
+            DisplayScreenHeader("Write Temperature Data");
+            Console.WriteLine("Saving the Temperature data to the file.");
+            for (int index = 0; index < numberOfDataPoints; index++)
+            {
+                temperatureInfoText = fahrenheitTemp[index].ToString();
+                File.AppendAllText(dataPath2, temperatureInfoText + "\n");
+            }
+            DisplayContinuePrompt();
+            DisplayIoStatus();
+            
         }
 
         static bool DataRecorderGetLeftLightSensor(bool leftLightSensor)
@@ -1551,7 +2027,9 @@ namespace Project_FinchControl
                 }
 
                 averageLightLevel[index] = (leftLightLevel + rightLightLevel) / 2;
+                
                 Console.WriteLine($"Light Level #{index + 1}: {averageLightLevel[index]}");
+
                 finchrobot.wait(frequencyInSeconds);
             }
 
@@ -2002,6 +2480,41 @@ namespace Project_FinchControl
             Console.WriteLine();
             Console.WriteLine("\t\t" + headerText);
             Console.WriteLine();
+        }
+
+        static void DisplayIoStatus()
+        {
+            string fileIoStatusMessage;
+            string dataPath = @"Data/ThemeData.txt";
+            string data;
+
+            DisplayScreenHeader("File I/O Status");
+
+            //
+            // Try/Catch block for displaying file I/O status
+            //
+            try
+            {
+                data = File.ReadAllText(dataPath);
+                fileIoStatusMessage = "Complete";
+            }
+            catch (DirectoryNotFoundException)
+            {
+                fileIoStatusMessage = "Unable to locate the folder for the data file.";
+            }
+            catch (FileNotFoundException)
+            {
+                fileIoStatusMessage = "Unable to locate the data file.";
+            }
+            catch (Exception)
+            {
+                fileIoStatusMessage = "Unable to read the data file.";
+            }
+
+            Console.WriteLine();
+            Console.WriteLine($"File I/O status: {fileIoStatusMessage}");
+
+            DisplayContinuePrompt();
         }
 
         #endregion
